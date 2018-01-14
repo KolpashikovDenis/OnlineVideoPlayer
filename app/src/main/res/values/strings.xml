@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Online Video Player</string>
+    <string name="dev_email">kolpashikov.denis@gmail.com</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello NOT blank fragment</string>
+    <string name="youtube_apikey">AIzaSyABd87bNGo0TzgrGwngrFwyl_Fme3xAcHs</string>
+    <string name="action_settings">Settings</string>
+    <string name="tmp_description">Description</string>
+    <string name="tmp_count_view">Count view</string>
+    <string name="tmp_public_date">Publication date</string>
+    <string name="item_main">Главная</string>
+
+</resources>
