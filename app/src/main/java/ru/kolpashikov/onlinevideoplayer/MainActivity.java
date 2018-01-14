@@ -377,6 +377,7 @@ public class MainActivity extends AppCompatActivity
                 /*
                 JSONArray contentItems = groupItems.getJSONObject();
                 */
+                
                 JSONArray items = groupItems.getJSONObject(i).getJSONObject("itemSectionRenderer")
                         .getJSONArray("contents").getJSONObject(0).getJSONObject("shelfRenderer")
                         .getJSONObject("content").getJSONObject("gridRenderer").getJSONArray("items");
