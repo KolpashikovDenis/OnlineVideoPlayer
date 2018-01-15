@@ -354,7 +354,6 @@ public class MainActivity extends AppCompatActivity
 
         @Override
         protected Void doInBackground(String... videoId) {
-
             try{
                 getContent(videoId[0]);
             } catch(IOException e){
@@ -377,7 +376,7 @@ public class MainActivity extends AppCompatActivity
                 /*
                 JSONArray contentItems = groupItems.getJSONObject();
                 */
-                
+
                 JSONArray items = groupItems.getJSONObject(i).getJSONObject("itemSectionRenderer")
                         .getJSONArray("contents").getJSONObject(0).getJSONObject("shelfRenderer")
                         .getJSONObject("content").getJSONObject("gridRenderer").getJSONArray("items");
