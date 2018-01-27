@@ -229,10 +229,11 @@ public class MainActivity extends AppCompatActivity
         view.setLayoutParams(params);
     }
 
-    private class ContentTask extends AsyncTask<String, ChannelItem, Void>{
-        List<ChannelItem> list;
+    private class ParseContentTask extends AsyncTask<String, YoutubeItem, Void>{
+        List<YoutubeItem> list;
+        final String _start = "ytInitialData";
 
-        public ContentTask(List<ChannelItem> list) {
+        public ParseContentTask(List<YoutubeItem> list) {
             this.list = list;
             list.clear();
         }
@@ -243,9 +244,12 @@ public class MainActivity extends AppCompatActivity
         }
 
         @Override
-        protected void onProgressUpdate(ChannelItem... values) {
-            super.onProgressUpdate(values);
+        protected void onProgressUpdate(YoutubeItem... values) {
+//            super.onProgressUpdate(values);
+
         }
+
+
     }
 
     private class InitialNavDrawerTask extends AsyncTask<Void, ChannelItem, Void> {
