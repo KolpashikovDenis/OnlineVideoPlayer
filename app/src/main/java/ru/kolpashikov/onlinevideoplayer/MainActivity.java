@@ -229,6 +229,24 @@ public class MainActivity extends AppCompatActivity
         view.setLayoutParams(params);
     }
 
+    private class ContentTask extends AsyncTask<String, ChannelItem, Void>{
+        List<ChannelItem> list;
+
+        public ContentTask(List<ChannelItem> list) {
+            this.list = list;
+            list.clear();
+        }
+
+        @Override
+        protected Void doInBackground(String... strings) {
+            return null;
+        }
+
+        @Override
+        protected void onProgressUpdate(ChannelItem... values) {
+            super.onProgressUpdate(values);
+        }
+    }
 
     private class InitialNavDrawerTask extends AsyncTask<Void, ChannelItem, Void> {
         final String LOG = "mLogs";
