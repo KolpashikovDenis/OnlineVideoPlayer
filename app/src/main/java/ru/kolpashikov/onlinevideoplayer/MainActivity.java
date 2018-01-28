@@ -240,6 +240,8 @@ public class MainActivity extends AppCompatActivity
 
         @Override
         protected Void doInBackground(String... strings) {
+
+
             return null;
         }
 
@@ -248,8 +250,6 @@ public class MainActivity extends AppCompatActivity
 //            super.onProgressUpdate(values);
 
         }
-
-
     }
 
     private class InitialNavDrawerTask extends AsyncTask<Void, ChannelItem, Void> {
