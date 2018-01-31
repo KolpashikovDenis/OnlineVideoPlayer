@@ -240,9 +240,64 @@ public class MainActivity extends AppCompatActivity
 
         @Override
         protected Void doInBackground(String... strings) {
+            String mainUrl = strings[0];
+            try {
+                getContent(mainUrl);
+            }catch(IOException e){
+                e.printStackTrace();
+            }
+        }
 
+        private void getContent(String url)throws IOException{
+            BufferedReader reader = null;
+            try{
+                URL u = new URL(url);
+                HttpURLConnection conn = (HttpURLConnection)u.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9"
+                        +",image/webp,image/apng,*/*;q=0.8");
+                conn.setRequestProperty("Accept-Lareanguage", "ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4");
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 " +
+                        "(KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36 OPR/47.0.2631.80");
+                conn.setReadTimeout(10000);
+                conn.connect();
+                reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while((line = reader.readLine()) != null){
+                    sb.append(line);
+                }
 
-            return null;
+                int iStart = sb.indexOf(_start)+_start.length();
+                while(sb.charAt(iStart) != '{') iStart++;
+
+                int nTmp = 1;
+                int nCount = iStart + 1;
+                do{
+                    if(sb.charAt(nCount) == '{'){
+                        nTmp++;
+                    }
+                    if(sb.charAt(nCount) == '}'){
+                        nTmp--;
+                    }
+                    nCount++;
+
+                } while (nTmp != 0);
+
+                line = sb.substring(iStart, nCount);
+                JSONObject root;
+                try{
+                    root = new JSONObject(line);
+                    if(root.getJSONObject("contents").has("twoColumnBrowseResultsRenderer")){
+
+                    }
+
+                }catch(JSONException e){
+                    e.printStackTrace();
+                }
+            }finally{
+
+            }
         }
 
         @Override
