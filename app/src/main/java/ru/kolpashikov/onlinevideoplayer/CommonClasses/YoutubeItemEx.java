@@ -13,5 +13,8 @@ public class YoutubeItemEx {
     public String author;       // author, name of channel: shortBylineText, longBylineText
 
     // Здесь будут поля которые могут отличаться по смыслу
-    public String viewCountText; // duration of video or count of video (if playlist)
+    public String viewCountText; // count of views
+    public String lengthText; // duration of video
+    public String publishedTimeText; // Date of publication video
+    public String urlChannelThumbnail; // link to icon of author's channel
 }
