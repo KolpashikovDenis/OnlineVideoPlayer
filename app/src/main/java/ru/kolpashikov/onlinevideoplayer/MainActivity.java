@@ -246,6 +246,7 @@ public class MainActivity extends AppCompatActivity
             }catch(IOException e){
                 e.printStackTrace();
             }
+            return null;
         }
 
         private void getContent(String url)throws IOException{
@@ -288,15 +289,37 @@ public class MainActivity extends AppCompatActivity
                 JSONObject root;
                 try{
                     root = new JSONObject(line);
+                    // Главная или канал
                     if(root.getJSONObject("contents").has("twoColumnBrowseResultsRenderer")){
 
+                        return;
+                    }
+
+                    // Быбор ролика
+                    if(root.getJSONObject("contents").has("twoColumnWatchNextResults")){
+
+                        return;
+                    }
+
+                    // Быбор плейлиста
+                    if(root.getJSONObject("contents").has("twoColumnWatchNextResults")){
+
+                        return;
+                    }
+
+                    // Поиск
+                    if(root.getJSONObject("contents").has("twoColumnSearchResultsRenderer")){
+
+                        return;
                     }
 
                 }catch(JSONException e){
                     e.printStackTrace();
                 }
             }finally{
-
+                if(reader != null){
+                    reader.close();
+                }
             }
         }
 
