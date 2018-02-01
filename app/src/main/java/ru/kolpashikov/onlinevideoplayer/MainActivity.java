@@ -8,7 +8,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -21,8 +20,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
-import android.widget.Toast;
 
 import com.google.android.youtube.player.YouTubePlayer;
 
@@ -40,9 +37,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ru.kolpashikov.onlinevideoplayer.CommonClasses.ChannelItem;
-import ru.kolpashikov.onlinevideoplayer.CommonClasses.Const;
-import ru.kolpashikov.onlinevideoplayer.CommonClasses.NavDrawerMenuItem;
-import ru.kolpashikov.onlinevideoplayer.CommonClasses.OnChangeNavDrawerMenu;
 import ru.kolpashikov.onlinevideoplayer.CommonClasses.OnVideoSelectedListener;
 import ru.kolpashikov.onlinevideoplayer.CommonClasses.RVAdapter;
 import ru.kolpashikov.onlinevideoplayer.CommonClasses.YoutubeItem;
@@ -229,7 +223,7 @@ public class MainActivity extends AppCompatActivity
         view.setLayoutParams(params);
     }
 
-    private class ParseContentTask extends AsyncTask<String, YoutubeItem, Void>{
+    private class ParseContentTask extends AsyncTask<String, YoutubeItem, Void> {
         List<YoutubeItem> list;
         final String _start = "ytInitialData";
 
@@ -291,6 +285,15 @@ public class MainActivity extends AppCompatActivity
                     root = new JSONObject(line);
                     // Главная или канал
                     if(root.getJSONObject("contents").has("twoColumnBrowseResultsRenderer")){
+                        JSONArray tmpArray = root.getJSONObject("contents").getJSONObject("twoColumnBrowseResultsRenderer")
+                                .getJSONArray("tabs").getJSONObject(0).getJSONObject("tabRenderer")
+                                .getJSONObject("sectionListRenderer").getJSONArray("contents");
+                        for(int i = 0; i < tmpArray.length(); i++){
+                            JSONArray items = tmpArray.getJSONObject(i).getJSONObject("itemSectionRenderer")
+                                    .getJSONArray("contents").getJSONObject(0).getJSONObject("shelfRenderer")
+                                    .getJSONObject("content").getJSONObject("gridRenderer").getJSONArray("items");
+
+                        }
 
                         return;
                     }
