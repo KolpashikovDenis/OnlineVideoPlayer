@@ -305,15 +305,21 @@ public class MainActivity extends AppCompatActivity
                         return;
                     }
 
-                    // Быбор ролика
+                    // Быбор ролика или плейлиста
                     if(root.getJSONObject("contents").has("twoColumnWatchNextResults")){
-                        if(root.getJSONObject("contents").getJSONObject("twoColumnWatchNextResults"))
-
-                        return;
-                    }
-
-                    // Быбор плейлиста
-                    if(root.getJSONObject("contents").has("twoColumnWatchNextResults")){
+                        if(root.getJSONObject("contents").getJSONObject("twoColumnWatchNextResults")
+                                .has("secondaryResults")){
+                            parseItemPage(root.getJSONObject("contents").getJSONObject("twoColumnWatchNextResults")
+                                .getJSONObject("secondaryResults").getJSONObject("secondaryResults")
+                                .getJSONArray("results"));
+                        } else if(root.getJSONObject("contents").getJSONObject("twoColumnWatchNextResults")
+                                .has("playlist")){
+                            parsePlaylistPage(root.getJSONObject("contents").getJSONObject("twoColumnWatchResults")
+                                    .getJSONObject("playlist").getJSONObject("playlist").getJSONArray("contents"));
+                        } else {
+                            Log.d(_start, root.getJSONObject("contents").getJSONObject("twoColumnWatchNextResults")
+                                    .names().toString());
+                        }
 
                         return;
                     }
@@ -351,7 +357,7 @@ public class MainActivity extends AppCompatActivity
 
         }
 
-        private void parseItemPage(JSONObject localRoot){
+        private void parseItemPage(JSONArray localRoot){
 
         }
 
@@ -360,6 +366,10 @@ public class MainActivity extends AppCompatActivity
         }
 
         private void parseChannelPage(JSONArray localRoot){
+
+        }
+
+        private void parsePlaylistPage(JSONArray localRoot){
 
         }
 
