@@ -295,9 +295,11 @@ public class MainActivity extends AppCompatActivity
                         if(tmp.has("gridRenderer")){
                             // Здесь "Главная"
                             parseMainPage(tmpArray);
-                        } else {
+                        } else if(tmp.has("horizontalListRenderer")){
                             // Здесь выбор канала
                             parseChannelPage(tmpArray);
+                        } else{
+                            Log.d(_start, tmp.names().toString());
                         }
 
                         return;
