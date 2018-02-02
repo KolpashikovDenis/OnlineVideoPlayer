@@ -288,11 +288,16 @@ public class MainActivity extends AppCompatActivity
                         JSONArray tmpArray = root.getJSONObject("contents").getJSONObject("twoColumnBrowseResultsRenderer")
                                 .getJSONArray("tabs").getJSONObject(0).getJSONObject("tabRenderer")
                                 .getJSONObject("sectionListRenderer").getJSONArray("contents");
-                        for(int i = 0; i < tmpArray.length(); i++){
-                            JSONArray items = tmpArray.getJSONObject(i).getJSONObject("itemSectionRenderer")
-                                    .getJSONArray("contents").getJSONObject(0).getJSONObject("shelfRenderer")
-                                    .getJSONObject("content").getJSONObject("gridRenderer").getJSONArray("items");
 
+                        JSONObject tmp = tmpArray.getJSONObject(0).getJSONObject("itemSectionRenderer")
+                                .getJSONArray("contents").getJSONObject(0).getJSONObject("shelfRenderer")
+                                .getJSONObject("content");
+                        if(tmp.has("gridRenderer")){
+                            // Здесь "Главная"
+                            parseMainPage(tmpArray);
+                        } else {
+                            // Здесь выбор канала
+                            parseChannelPage(tmpArray);
                         }
 
                         return;
@@ -324,6 +329,35 @@ public class MainActivity extends AppCompatActivity
                     reader.close();
                 }
             }
+        }
+
+        private void parseMainPage(JSONArray localRoot){
+            try {
+                for (int i = 0; i < localRoot.length(); i++) {
+                    JSONArray items = localRoot.getJSONObject(i).getJSONObject("itemSectionRenderer")
+                            .getJSONArray("contents").getJSONObject(0).getJSONObject("shelfRenderer")
+                            .getJSONObject("content").getJSONObject("gridRenderer").getJSONArray("items");
+                    for(int k = 0; k < items.length(); k++){
+
+                    }
+
+                }
+            }catch(JSONException e){
+                e.printStackTrace();
+            }
+
+        }
+
+        private void parseItemPage(JSONObject localRoot){
+
+        }
+
+        private void parseSearchPage(JSONObject localRoot){
+
+        }
+
+        private void parseChannelPage(JSONArray localRoot){
+
         }
 
         @Override
