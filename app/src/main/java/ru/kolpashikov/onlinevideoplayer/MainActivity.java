@@ -307,6 +307,7 @@ public class MainActivity extends AppCompatActivity
 
                     // Быбор ролика
                     if(root.getJSONObject("contents").has("twoColumnWatchNextResults")){
+                        if(root.getJSONObject("contents").getJSONObject("twoColumnWatchNextResults"))
 
                         return;
                     }
