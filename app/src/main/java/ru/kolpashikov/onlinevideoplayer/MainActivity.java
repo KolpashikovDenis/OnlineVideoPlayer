@@ -305,17 +305,22 @@ public class MainActivity extends AppCompatActivity
                         return;
                     }
 
-                    // Быбор ролика
+                    // Быбор ролика или плейлиста
                     if(root.getJSONObject("contents").has("twoColumnWatchNextResults")){
-                        if(root.getJSONObject("contents").getJSONObject("twoColumnWatchNextResults")){
-
+                        if(root.getJSONObject("contents").getJSONObject("twoColumnWatchNextResults")
+                                .has("secondaryResults")){
+                            JSONArray items = root.getJSONObject("contents").getJSONObject("twoColumnWatchNextResults")
+                                    .getJSONObject("secondaryResults").getJSONObject("secondaryResults")
+                                    .getJSONArray("results");
+                            parseItemPage(items);
+                        } else if(root.getJSONObject("contents").getJSONObject("twoColumnWatchNextResults")
+                                .has("playlist")) {
+                            JSONObject playlist = root.getJSONObject("contents").getJSONObject("twoColumnWatchNextResults")
+                                    .getJSONObject("playlist").getJSONObject("playlist");
+                            parsePlaylist(playlist);
+                        } else {
+                            Log.d(_start, root.getJSONObject("contents").getJSONObject("twoColumnWatchNextResults").names().toString());
                         }
-
-                        return;
-                    }
-
-                    // Быбор плейлиста
-                    if(root.getJSONObject("contents").has("twoColumnWatchNextResults")){
 
                         return;
                     }
@@ -335,7 +340,7 @@ public class MainActivity extends AppCompatActivity
                 }
             }
         }
-
+//------------------------------------------------------------------------------------
         private void parseMainPage(JSONArray localRoot){
             try {
                 for (int i = 0; i < localRoot.length(); i++) {
@@ -353,11 +358,15 @@ public class MainActivity extends AppCompatActivity
 
         }
 
-        private void parseItemPage(JSONObject localRoot){
+        private void parsePlaylist(JSONObject localRoot){
 
         }
 
-        private void parseSearchPage(JSONObject localRoot){
+        private void parseItemPage(JSONArray localRoot){
+
+        }
+
+        private void parseSearchPage(JSONArray localRoot){
 
         }
 
