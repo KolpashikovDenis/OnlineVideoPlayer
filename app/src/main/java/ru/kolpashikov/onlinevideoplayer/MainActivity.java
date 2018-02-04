@@ -401,15 +401,40 @@ public class MainActivity extends AppCompatActivity
             String videoId, linkToPreview, title, publishedTimeText, viewCountText, urlToVideo
                     ,author, linkToAuthorChannel, duration;
             int typeOfId;
-            try{
-
-            }catch (JSONException e){
-                e.printStackTrace();
-            }
+//            try{
+//
+//            }catch (JSONException e){
+//                e.printStackTrace();
+//            }
         }
 
         private void parseItemPage(JSONArray localRoot){
+            String videoId, linkToPreview, title, publishedTimeText, viewCountText, urlToVideo
+                    ,author, linkToAuthorChannel, duration;
+            int typeOfId;
+            try{
+                for(int i = 0; i < localRoot.length(); i++){
+                    JSONObject item = localRoot.getJSONObject(i);
+                    if(item.has("compactAutoplayRenderer")){
+                        JSONObject subItem = item.getJSONObject("compactAutoplayRenderer")
+                                .getJSONArray("contents").getJSONObject(0).getJSONObject("compactVideoRenderer");
+                        videoId = subItem.getString("videoId");
+                        linkToPreview = subItem.getJSONObject("thumbnail").getJSONArray("thumbnails")
+                                .getJSONObject(0).getString("url");
+                        title = subItem.getJSONObject("title").getString("simpleText");
 
+                    }else if(item.has("compactVideoRenderer")){
+
+                    }else if(item.has("compactRadioRenderer")){
+
+                    }else{
+                        Log.d(_start, item.names().toString());
+                        continue;
+                    }
+                }
+            }catch(JSONException e){
+                e.printStackTrace();
+            }
         }
 
         private void parseSearchPage(JSONArray localRoot){
