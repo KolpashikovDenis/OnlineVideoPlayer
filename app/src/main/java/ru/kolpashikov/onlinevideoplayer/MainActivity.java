@@ -317,7 +317,7 @@ public class MainActivity extends AppCompatActivity
                                 .has("playlist")) {
                             JSONObject playlist = root.getJSONObject("contents").getJSONObject("twoColumnWatchNextResults")
                                     .getJSONObject("playlist").getJSONObject("playlist");
-                            parsePlaylist(playlist);
+                            parsePlaylistPage(playlist);
                         } else {
                             Log.d(_start, root.getJSONObject("contents").getJSONObject("twoColumnWatchNextResults").names().toString());
                         }
@@ -327,7 +327,11 @@ public class MainActivity extends AppCompatActivity
 
                     // Поиск
                     if(root.getJSONObject("contents").has("twoColumnSearchResultsRenderer")){
-
+                        JSONArray tmpArray = root.getJSONObject("contents").getJSONObject("twoColumnSearchResultsRenderer")
+                                .getJSONObject("primaryContents").getJSONObject("sectionListRenderer")
+                                .getJSONArray("contents").getJSONObject(0).getJSONObject("itemSectionRenderer")
+                                .getJSONArray("contents");
+                        parseSearchPage(tmpArray);
                         return;
                     }
 
@@ -358,7 +362,7 @@ public class MainActivity extends AppCompatActivity
 
         }
 
-        private void parsePlaylist(JSONObject localRoot){
+        private void parsePlaylistPage(JSONObject localRoot){
 
         }
 
