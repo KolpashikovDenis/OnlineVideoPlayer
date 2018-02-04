@@ -16,5 +16,22 @@ public class YoutubeItemEx {
     public String viewCountText; // count of views
     public String lengthText; // duration of video
     public String publishedTimeText; // Date of publication video
+    public String linkToAuthorChannel; // link to author channel
     public String urlChannelThumbnail; // link to icon of author's channel
+
+    public YoutubeItemEx(int typeOfId, String ytId, String ytThumbnail, String ytTitle, String urlResoucre,
+                         String author, String viewCountText, String lengthText, String publishedTimeText,
+                         String linkToAuthorChannel, String urlChannelThumbnail) {
+        this.typeOfId = typeOfId;
+        this.ytId = ytId;
+        this.ytThumbnail = ytThumbnail;
+        this.ytTitle = ytTitle;
+        this.urlResoucre = urlResoucre;
+        this.author = author;
+        this.viewCountText = viewCountText;
+        this.lengthText = lengthText;
+        this.publishedTimeText = publishedTimeText;
+        this.linkToAuthorChannel = linkToAuthorChannel;
+        this.urlChannelThumbnail = urlChannelThumbnail;
+    }
 }

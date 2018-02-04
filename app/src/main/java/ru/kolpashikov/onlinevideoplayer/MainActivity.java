@@ -37,9 +37,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ru.kolpashikov.onlinevideoplayer.CommonClasses.ChannelItem;
+import ru.kolpashikov.onlinevideoplayer.CommonClasses.Const;
 import ru.kolpashikov.onlinevideoplayer.CommonClasses.OnVideoSelectedListener;
 import ru.kolpashikov.onlinevideoplayer.CommonClasses.RVAdapter;
 import ru.kolpashikov.onlinevideoplayer.CommonClasses.YoutubeItem;
+import ru.kolpashikov.onlinevideoplayer.CommonClasses.YoutubeItemEx;
 import ru.kolpashikov.onlinevideoplayer.fragments.ContentFragment;
 import ru.kolpashikov.onlinevideoplayer.fragments.FragmentVideo;
 import ru.kolpashikov.onlinevideoplayer.fragments.NoConnectionFragment;
@@ -223,11 +225,11 @@ public class MainActivity extends AppCompatActivity
         view.setLayoutParams(params);
     }
 
-    private class ParseContentTask extends AsyncTask<String, YoutubeItem, Void> {
-        List<YoutubeItem> list;
+    private class ParseContentTask extends AsyncTask<String, YoutubeItemEx, Void> {
+        List<YoutubeItemEx> list;
         final String _start = "ytInitialData";
 
-        public ParseContentTask(List<YoutubeItem> list) {
+        public ParseContentTask(List<YoutubeItemEx> list) {
             this.list = list;
             list.clear();
         }
@@ -276,10 +278,10 @@ public class MainActivity extends AppCompatActivity
                         nTmp--;
                     }
                     nCount++;
-
                 } while (nTmp != 0);
-
                 line = sb.substring(iStart, nCount);
+
+                // PARSE JSON DATA
                 JSONObject root;
                 try{
                     root = new JSONObject(line);
@@ -287,7 +289,7 @@ public class MainActivity extends AppCompatActivity
                     if(root.getJSONObject("contents").has("twoColumnBrowseResultsRenderer")){
                         JSONArray tmpArray = root.getJSONObject("contents").getJSONObject("twoColumnBrowseResultsRenderer")
                                 .getJSONArray("tabs").getJSONObject(0).getJSONObject("tabRenderer")
-                                .getJSONObject("sectionListRenderer").getJSONArray("contents");
+                                .getJSONObject("content").getJSONObject("sectionListRenderer").getJSONArray("contents");
 
                         JSONObject tmp = tmpArray.getJSONObject(0).getJSONObject("itemSectionRenderer")
                                 .getJSONArray("contents").getJSONObject(0).getJSONObject("shelfRenderer")
@@ -315,6 +317,7 @@ public class MainActivity extends AppCompatActivity
                             parseItemPage(items);
                         } else if(root.getJSONObject("contents").getJSONObject("twoColumnWatchNextResults")
                                 .has("playlist")) {
+                            // TODO: Вот тут реализовать не разбор плейлиста, а вызов дочерней активности
                             JSONObject playlist = root.getJSONObject("contents").getJSONObject("twoColumnWatchNextResults")
                                     .getJSONObject("playlist").getJSONObject("playlist");
                             parsePlaylistPage(playlist);
@@ -346,13 +349,45 @@ public class MainActivity extends AppCompatActivity
         }
 //------------------------------------------------------------------------------------
         private void parseMainPage(JSONArray localRoot){
+            String videoId, linkToPreview, title, publishedTimeText, viewCountText, urlToVideo
+                    ,author, linkToAuthorChannel, duration;
+            int typeOfId;
             try {
                 for (int i = 0; i < localRoot.length(); i++) {
                     JSONArray items = localRoot.getJSONObject(i).getJSONObject("itemSectionRenderer")
                             .getJSONArray("contents").getJSONObject(0).getJSONObject("shelfRenderer")
                             .getJSONObject("content").getJSONObject("gridRenderer").getJSONArray("items");
                     for(int k = 0; k < items.length(); k++){
+                        JSONObject item = items.getJSONObject(0).getJSONObject("gridVideoRenderer");
+                        if(item.has("videoId")){
+                            typeOfId = Const.VIDEO_ID;
+                            videoId = item.getString("videoId");
+                            linkToPreview = item.getJSONArray("thumbnails").getJSONObject(0)
+                                    .getString("url");
+                            title = item.getJSONObject("title").getString("simpleText");
+                            publishedTimeText = item.getJSONObject("publishedTimeText").getString("simpleText");
+                            viewCountText = item.getJSONObject("viewCountText").getString("simpleText");
+                            urlToVideo = Const.BASE_URL + item.getJSONObject("navigationEndpoint").getJSONObject("webNavigationEndpointData")
+                                    .getString("url");
+                            author = item.getJSONArray("runs").getJSONObject(0).getString("text");
+                            linkToAuthorChannel = item.getJSONArray("runs").getJSONObject(0)
+                                    .getJSONObject("navigationEndpoint").getJSONObject("webNavigationEndpointData")
+                                    .getString("url");
+                            duration = item.getJSONArray("thumbnailOverlays").getJSONObject(0)
+                                    .getJSONObject("thumbnailOverlayTimeStatusRenderer").getJSONObject("text")
+                                    .getString("simpleText");
 
+                            publishProgress(new YoutubeItemEx(typeOfId, videoId, linkToPreview, title, urlToVideo,
+                                    author, viewCountText, duration, publishedTimeText, linkToAuthorChannel,
+                                    ""));
+                        } /*else if(item.has("playlistId")){
+                            Log.d(_start, item.names().toString());
+
+                        } else if(item.has("channelId")){
+                            Log.d(_start, item.names().toString());
+                        } */else {
+                            Log.d(_start, item.names().toString());
+                        }
                     }
 
                 }
@@ -363,7 +398,14 @@ public class MainActivity extends AppCompatActivity
         }
 
         private void parsePlaylistPage(JSONObject localRoot){
+            String videoId, linkToPreview, title, publishedTimeText, viewCountText, urlToVideo
+                    ,author, linkToAuthorChannel, duration;
+            int typeOfId;
+            try{
 
+            }catch (JSONException e){
+                e.printStackTrace();
+            }
         }
 
         private void parseItemPage(JSONArray localRoot){
@@ -379,8 +421,8 @@ public class MainActivity extends AppCompatActivity
         }
 
         @Override
-        protected void onProgressUpdate(YoutubeItem... values) {
-//            super.onProgressUpdate(values);
+        protected void onProgressUpdate(YoutubeItemEx... values) {
+            super.onProgressUpdate(values);
 
         }
     }
