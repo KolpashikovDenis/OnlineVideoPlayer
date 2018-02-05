@@ -370,7 +370,7 @@ public class MainActivity extends AppCompatActivity
                             urlToVideo = Const.BASE_URL + item.getJSONObject("navigationEndpoint").getJSONObject("webNavigationEndpointData")
                                     .getString("url");
                             author = item.getJSONArray("runs").getJSONObject(0).getString("text");
-                            linkToAuthorChannel = item.getJSONArray("runs").getJSONObject(0)
+                            linkToAuthorChannel = Const.BASE_URL+item.getJSONArray("runs").getJSONObject(0)
                                     .getJSONObject("navigationEndpoint").getJSONObject("webNavigationEndpointData")
                                     .getString("url");
                             duration = item.getJSONArray("thumbnailOverlays").getJSONObject(0)
@@ -410,19 +410,37 @@ public class MainActivity extends AppCompatActivity
 
         private void parseItemPage(JSONArray localRoot){
             String videoId, linkToPreview, title, publishedTimeText, viewCountText, urlToVideo
-                    ,author, linkToAuthorChannel, duration;
+                    ,author, linkToAuthorChannel, duration, channelThumbnail;
             int typeOfId;
             try{
                 for(int i = 0; i < localRoot.length(); i++){
                     JSONObject item = localRoot.getJSONObject(i);
                     if(item.has("compactAutoplayRenderer")){
-                        JSONObject subItem = item.getJSONObject("compactAutoplayRenderer")
-                                .getJSONArray("contents").getJSONObject(0).getJSONObject("compactVideoRenderer");
+                        JSONObject subItem = item.getJSONObject("compactAutoplayRenderer").getJSONArray("contents")
+                                .getJSONObject(0).getJSONObject("compactVideoRenderer");
+                        typeOfId = Const.VIDEO_ID;
                         videoId = subItem.getString("videoId");
                         linkToPreview = subItem.getJSONObject("thumbnail").getJSONArray("thumbnails")
                                 .getJSONObject(0).getString("url");
                         title = subItem.getJSONObject("title").getString("simpleText");
+                        publishedTimeText = "";
+                        viewCountText = subItem.getJSONObject("viewCountText").getString("simpleText");
+                        urlToVideo = Const.BASE_URL+subItem.getJSONObject("navigationEndpoint").getJSONObject("webNavigationEndpointData")
+                                .getString("url");
+                        author = subItem.getJSONObject("shortBylineText").getJSONArray("runs")
+                                .getJSONObject(0).getString("text");
+                        linkToAuthorChannel = Const.BASE_URL+subItem.getJSONObject("shortBylineText").getJSONArray("runs")
+                                .getJSONObject(0).getJSONObject("navigationEndpoint")
+                                .getJSONObject("webNavigationEndpointData").getString("url");
+                        duration = subItem.getJSONArray("thumbnailOverlays").getJSONObject(0)
+                                .getJSONObject("thumbnailOverlayTimeStatusRenderer").getJSONObject("text")
+                                .getString("simpleText");
+                        channelThumbnail = Const.BASE_URL+subItem.getJSONObject("channelThumbnail").getJSONArray("thumbnails")
+                                .getJSONObject(0).getString("url");
 
+                        publishProgress(new YoutubeItemEx(typeOfId, videoId, linkToPreview, title, urlToVideo,
+                                author, viewCountText, duration, publishedTimeText, linkToAuthorChannel,
+                                channelThumbnail));
                     }else if(item.has("compactVideoRenderer")){
 
                     }else if(item.has("compactRadioRenderer")){
