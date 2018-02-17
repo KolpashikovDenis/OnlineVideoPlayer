@@ -1,6 +1,8 @@
 package ru.kolpashikov.onlinevideoplayer.CommonClasses;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -12,6 +14,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.InputStream;
+import java.net.URL;
 import java.util.List;
 
 import ru.kolpashikov.onlinevideoplayer.MainActivity;
@@ -24,11 +28,11 @@ import ru.kolpashikov.onlinevideoplayer.fragments.FragmentVideo;
 
 public class RVAdapter extends RecyclerView.Adapter<RVAdapter.VideoViewHolder> {
     static String LOG = "mLogs";
-    static private List<YoutubeItem> videoList;
+    static private List<YoutubeItemEx> videoList;
     static Context context;
     static  OnVideoSelectedListener mCallback;
 
-    public RVAdapter(Context _context, List<YoutubeItem> _videoList) {
+    public RVAdapter(Context _context, List<YoutubeItemEx> _videoList) {
         videoList = _videoList;
         context = _context;
         try{
@@ -52,29 +56,30 @@ public class RVAdapter extends RecyclerView.Adapter<RVAdapter.VideoViewHolder> {
 
     @Override
     public void onBindViewHolder(VideoViewHolder holder, int position) {
-        YoutubeItem videoListItem = videoList.get(position);
+        YoutubeItemEx videoListItem = videoList.get(position);
 
-        holder.tvDescription.setText(videoListItem.title);
-        if(!videoListItem.count_of_view.isEmpty()) {
+        holder.tvDescription.setText(videoListItem.ytTitle);
+        if(!videoListItem.viewCountText.isEmpty()) {
             holder.tvCountView.setVisibility(View.VISIBLE);
-            holder.tvCountView.setText(videoListItem.count_of_view);
+            holder.tvCountView.setText(videoListItem.viewCountText);
         } else {
             holder.tvCountView.setVisibility(View.GONE);
         }
-        if(!videoListItem.duration.isEmpty()) {
-            holder.tvDuration.setText(videoListItem.duration);
+        if(!videoListItem.lengthText.isEmpty()) {
+            holder.tvDuration.setText(videoListItem.lengthText);
             holder.tvDuration.setVisibility(View.VISIBLE);
         }else{
             holder.tvDuration.setVisibility(View.GONE);
         }
-        if(!videoListItem.publicationDate.isEmpty()) {
+        if(!videoListItem.publishedTimeText.isEmpty()) {
             holder.tvPublicationDate.setVisibility(View.VISIBLE);
-            holder.tvPublicationDate.setText(videoListItem.publicationDate);
+            holder.tvPublicationDate.setText(videoListItem.publishedTimeText);
         }else{
             holder.tvPublicationDate.setVisibility(View.GONE);
         }
         holder.tvAuthor.setText(videoListItem.author);
-        holder.iv.setImageBitmap(videoListItem.image);
+        Bitmap b = getBitmap(videoListItem.ytThumbnail);
+        holder.iv.setImageBitmap(b);
 
         // TODO: реализавать отображение что под карточкой скрывается список
         if(videoListItem.typeOfId == 1){
@@ -84,6 +89,18 @@ public class RVAdapter extends RecyclerView.Adapter<RVAdapter.VideoViewHolder> {
         } else{
 
         }
+    }
+
+    public Bitmap getBitmap(String url){
+        Bitmap b = null;
+        try{
+            InputStream in = new URL(url).openStream();
+            b = BitmapFactory.decodeStream(in);
+        }catch( Exception e){
+//            Log.e("ERROR", e.getMessage());
+            b = null;
+        }
+        return b;
     }
 
     @Override

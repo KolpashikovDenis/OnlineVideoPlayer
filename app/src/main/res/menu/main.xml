@@ -7,4 +7,12 @@
         android:orderInCategory="100"
         android:title="@string/action_settings"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/action_search"
+        android:orderInCategory="300"
+        android:icon="@android:drawable/ic_menu_search"
+        android:title="Search"
+        android:actionLayout="@layout/edit_text_layout"
+        app:showAsAction="ifRoom|collapseActionView"
+        />
 </menu>

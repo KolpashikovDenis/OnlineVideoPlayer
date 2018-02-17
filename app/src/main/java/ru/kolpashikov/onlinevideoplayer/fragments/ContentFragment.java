@@ -32,10 +32,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ru.kolpashikov.onlinevideoplayer.CommonClasses.ChannelItem;
+import ru.kolpashikov.onlinevideoplayer.CommonClasses.Const;
 import ru.kolpashikov.onlinevideoplayer.CommonClasses.OnChangeNavDrawerMenu;
 import ru.kolpashikov.onlinevideoplayer.CommonClasses.OnVideoSelectedListener;
 import ru.kolpashikov.onlinevideoplayer.CommonClasses.RVAdapter;
 import ru.kolpashikov.onlinevideoplayer.CommonClasses.YoutubeItem;
+import ru.kolpashikov.onlinevideoplayer.CommonClasses.YoutubeItemEx;
 import ru.kolpashikov.onlinevideoplayer.MainActivity;
 import ru.kolpashikov.onlinevideoplayer.R;
 
@@ -49,8 +51,8 @@ public class ContentFragment extends Fragment {
 
     private RecyclerView rvMain;
     private RVAdapter adapter;
-    private List<YoutubeItem> videoList; // ВОт тут самый главный videoList
-    OnVideoSelectedListener mCallback;
+    private List<YoutubeItemEx> videoList; // ВОт тут самый главный videoList
+    OnVideoSelectedListener mCallback = null;
 
     public ContentFragment() {
         // Required empty public constructor
@@ -66,6 +68,7 @@ public class ContentFragment extends Fragment {
                     + _context.toString()
                     + " must implements OnVideoSelectedListener");
         }
+
     }
 
     @Override
@@ -79,11 +82,12 @@ public class ContentFragment extends Fragment {
         rvMain.setHasFixedSize(true);
 
         if(videoList == null) {
-            videoList = new ArrayList<>();
+            videoList = mCallback.getVideoList();
         } else{
             videoList.clear();
         }
-        adapter = new RVAdapter(getActivity(), videoList);
+        //adapter = new RVAdapter(getActivity(), videoList);
+        adapter = mCallback.getVideoAdapter();
         rvMain.setAdapter(adapter);
 
         return view;
@@ -96,15 +100,8 @@ public class ContentFragment extends Fragment {
         videoList.clear();
         adapter.notifyDataSetChanged();
 
-        new PredownloadTask(videoList).execute();
-    }
-
-    public List<YoutubeItem> getVideoList(){
-        return videoList;
-    }
-
-    public RVAdapter getAdapter(){
-        return adapter;
+//        new PredownloadTask(videoList).execute();
+        mCallback.startAsyncTask(Const.BASE_URL);
     }
 
     private class PredownloadTask extends AsyncTask<Void, YoutubeItem, Void> {

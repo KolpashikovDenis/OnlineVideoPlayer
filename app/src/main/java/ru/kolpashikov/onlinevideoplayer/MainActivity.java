@@ -2,6 +2,7 @@ package ru.kolpashikov.onlinevideoplayer;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -16,10 +17,15 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.youtube.player.YouTubePlayer;
 
@@ -35,11 +41,13 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 import ru.kolpashikov.onlinevideoplayer.CommonClasses.ChannelItem;
 import ru.kolpashikov.onlinevideoplayer.CommonClasses.Const;
 import ru.kolpashikov.onlinevideoplayer.CommonClasses.OnVideoSelectedListener;
 import ru.kolpashikov.onlinevideoplayer.CommonClasses.RVAdapter;
+import ru.kolpashikov.onlinevideoplayer.CommonClasses.StackItem;
 import ru.kolpashikov.onlinevideoplayer.CommonClasses.YoutubeItem;
 import ru.kolpashikov.onlinevideoplayer.CommonClasses.YoutubeItemEx;
 import ru.kolpashikov.onlinevideoplayer.fragments.ContentFragment;
@@ -63,16 +71,23 @@ public class MainActivity extends AppCompatActivity
     private ActionBarDrawerToggle toggle;
     private NavigationView navigationView;
     private Menu menu;
+    private EditText etSearch;
+
     private List<ChannelItem> menuItemList;
-    private List<YoutubeItem> videoList;
-    private RVAdapter adapter;
+    private List<YoutubeItemEx> videoList;
+    private RVAdapter videoAdapter;
     private int count = 0;
 
     private ContentFragment contentFragment;
     private NoConnectionFragment noConnectionFragment;
     private FragmentVideo fragmentVideo;
     private View fragmentVideoView;
-    private SelectVideoIdTask threadSelectVideoTask;
+    private ParseContentTask threadSelectVideoTask;
+    private Stack<StackItem> history;
+    private StackItem prevItem;
+    String videoId;
+    String fullUrl;
+
 
     private FragmentTransaction ft;
 
@@ -83,6 +98,9 @@ public class MainActivity extends AppCompatActivity
 
         toolbar = (Toolbar)findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        etSearch = (EditText)findViewById(R.id.etSearch);
+
         drawer = (DrawerLayout)findViewById(R.id.drawer_layout);
         toggle = new ActionBarDrawerToggle(this, drawer, toolbar,
                 R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -94,6 +112,13 @@ public class MainActivity extends AppCompatActivity
         menu = navigationView.getMenu();
         menu.clear();
         menuItemList = new ArrayList<>();
+        videoList = new ArrayList<>();
+        videoAdapter = new RVAdapter(this, videoList);
+        new ParseContentTask(videoList).execute(baseUrl);
+        history = new Stack<>();
+        videoId = "";
+        fullUrl = Const.BASE_URL;
+        prevItem = new StackItem(fullUrl, videoId);
 
         contentFragment= new ContentFragment();
 
@@ -109,9 +134,6 @@ public class MainActivity extends AppCompatActivity
             ft.replace(R.id.rv_container, noConnectionFragment);
         }
         ft.commit();
-
-        videoList = contentFragment.getVideoList();
-        adapter = contentFragment.getAdapter();
     }
 
     @Override
@@ -121,6 +143,19 @@ public class MainActivity extends AppCompatActivity
         }else if(isFullScreen){
             fragmentVideo.backnormal();
             isFullScreen = false;
+        } else if(!history.empty()){
+            videoList.clear();
+            videoAdapter.notifyDataSetChanged();
+            StackItem prev = history.pop();
+
+            if(prev.resourceId.isEmpty()){
+                fragmentVideoView.setVisibility(View.GONE);
+            } else {
+                fragmentVideoView.setVisibility(View.VISIBLE);
+                fragmentVideo.setVideoId(prev.resourceId);
+            }
+
+            new ParseContentTask(videoList).execute(prev.urlToResource);
         } else super.onBackPressed();
     }
 
@@ -133,8 +168,35 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if(id == R.id.action_settings){
-            return true;
+        switch(id){
+            case R.id.action_settings:
+                break;
+            case R.id.action_search:
+                etSearch.setHint("Search content");
+                etSearch.setVisibility(View.VISIBLE);
+                etSearch.setOnEditorActionListener(new EditText.OnEditorActionListener(){
+                    @Override
+                    public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                        int keyEvent = event.getAction();
+                        Toast.makeText(MainActivity.this, ""+keyEvent+event.toString(),
+                                Toast.LENGTH_SHORT).show();
+                        return false;
+                    }
+                });
+                etSearch.setOnKeyListener(new View.OnKeyListener(){
+                    @Override
+                    public boolean onKey(View v, int keyCode, KeyEvent event) {
+                        int keyEvent = event.getAction();
+                        if((keyEvent == KeyEvent.ACTION_DOWN)&&(keyCode == KeyEvent.KEYCODE_ENTER)){
+                            Toast.makeText(MainActivity.this, etSearch.getText(), Toast.LENGTH_SHORT).show();
+                            return true;
+                        }
+                        return false;
+                    }
+                });
+
+                break;
+            default:
         }
 
         return super.onOptionsItemSelected(item);
@@ -147,13 +209,12 @@ public class MainActivity extends AppCompatActivity
         String fullUrl = baseUrl + ((ChannelItem)menuItemList.get(id)).channelUrl;
 //        String videoId = "";
 
-        videoList = contentFragment.getVideoList();
-        adapter = contentFragment.getAdapter();
+//        videoAdapter = contentFragment.getAdapter();
         videoList.clear();
-        adapter.notifyDataSetChanged();
+        videoAdapter.notifyDataSetChanged();
         fragmentVideo.setVideoId("");
         fragmentVideoView.setVisibility(View.GONE);
-        threadSelectVideoTask = new SelectVideoIdTask(videoList);
+        threadSelectVideoTask = new ParseContentTask(videoList);
         threadSelectVideoTask.execute(fullUrl);
 
 //        Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
@@ -169,6 +230,7 @@ public class MainActivity extends AppCompatActivity
     protected void onStart() {
         super.onStart();
         new InitialNavDrawerTask(menuItemList).execute();
+        new ParseContentTask(videoList).execute(Const.BASE_URL);
     }
 
     @Override
@@ -193,16 +255,35 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onVideoSelected(int position) {
 
-        String videoId = videoList.get(position).videoId;
-        String fullUrl = videoList.get(position).fullUrl;
+        history.push(prevItem);
+
+        String videoId = videoList.get(position).ytId;
+        String fullUrl = videoList.get(position).urlResoucre;
+
+        prevItem = new StackItem(fullUrl, videoId);
 
         videoList.clear();
-        adapter.notifyDataSetChanged();
+        videoAdapter.notifyDataSetChanged();
 
         fragmentVideoView.setVisibility(View.VISIBLE);
         fragmentVideo.setVideoId(videoId);
-        threadSelectVideoTask = new SelectVideoIdTask(videoList);
+        threadSelectVideoTask = new ParseContentTask(videoList);
         threadSelectVideoTask.execute(fullUrl);
+    }
+
+    @Override
+    public List<YoutubeItemEx> getVideoList() {
+        return videoList;
+    }
+
+    @Override
+    public RVAdapter getVideoAdapter() {
+        return videoAdapter;
+    }
+
+    @Override
+    public void startAsyncTask(String url){
+        new ParseContentTask(videoList).execute(url);
     }
 
     @Override
@@ -225,7 +306,7 @@ public class MainActivity extends AppCompatActivity
         view.setLayoutParams(params);
     }
 
-    private class ParseContentTask extends AsyncTask<String, YoutubeItemEx, Void> {
+    public class ParseContentTask extends AsyncTask<String, YoutubeItemEx, Void> {
         List<YoutubeItemEx> list;
         final String _start = "ytInitialData";
 
@@ -291,8 +372,8 @@ public class MainActivity extends AppCompatActivity
                                 .getJSONArray("tabs").getJSONObject(0).getJSONObject("tabRenderer")
                                 .getJSONObject("content").getJSONObject("sectionListRenderer").getJSONArray("contents");
 
-                        JSONObject tmp = tmpArray.getJSONObject(0).getJSONObject("itemSectionRenderer")
-                                .getJSONArray("contents").getJSONObject(0).getJSONObject("shelfRenderer")
+                        /*JSONObject tmp = tmpArray.getJSONObject(0).getJSONObject("itemSectionRenderer")
+                                .getJSONArray("contents").getJSONObject(1).getJSONObject("shelfRenderer")
                                 .getJSONObject("content");
                         if(tmp.has("gridRenderer")){
                             // Здесь "Главная"
@@ -302,6 +383,15 @@ public class MainActivity extends AppCompatActivity
                             parseChannelPage(tmpArray);
                         } else{
                             Log.d(_start, tmp.names().toString());
+                        }*/
+
+                        // Главная страница
+                        if(root.has("adSafetyReason")){
+                            parseMainPage(tmpArray);
+                        } else if(root.has("microformat")){ // Здесь канал
+                            parseChannelPage(tmpArray);
+                        } else {
+                            Log.d(_start, root.names().toString());
                         }
 
                         return;
@@ -354,25 +444,43 @@ public class MainActivity extends AppCompatActivity
             int typeOfId;
             try {
                 for (int i = 0; i < localRoot.length(); i++) {
-                    JSONArray items = localRoot.getJSONObject(i).getJSONObject("itemSectionRenderer")
+                    JSONArray items;
+
+                    if(localRoot.getJSONObject(i).getJSONObject("itemSectionRenderer")
                             .getJSONArray("contents").getJSONObject(0).getJSONObject("shelfRenderer")
-                            .getJSONObject("content").getJSONObject("gridRenderer").getJSONArray("items");
+                            .getJSONObject("content").has("gridRenderer")) {
+                        items = localRoot.getJSONObject(i).getJSONObject("itemSectionRenderer")
+                                .getJSONArray("contents").getJSONObject(0).getJSONObject("shelfRenderer")
+                                .getJSONObject("content").getJSONObject("gridRenderer").getJSONArray("items");
+                    } else if(localRoot.getJSONObject(i).getJSONObject("itemSectionRenderer")
+                            .getJSONArray("contents").getJSONObject(0).getJSONObject("shelfRenderer")
+                            .getJSONObject("content").has("horizontalListRenderer")){
+                        items = localRoot.getJSONObject(i).getJSONObject("itemSectionRenderer")
+                                .getJSONArray("contents").getJSONObject(0).getJSONObject("shelfRenderer")
+                                .getJSONObject("content").getJSONObject("horizontalListRenderer").getJSONArray("items");
+                    } else {
+                        Log.d(_start, "-"+i+"-");
+                        Log.d(_start, localRoot.getJSONObject(i).getJSONObject("itemSectionRenderer")
+                                .getJSONArray("contents").getJSONObject(0).getJSONObject("shelfRenderer")
+                                .getJSONObject("content").names().toString());
+                        continue;
+                    }
                     for(int k = 0; k < items.length(); k++){
-                        JSONObject item = items.getJSONObject(0).getJSONObject("gridVideoRenderer");
+                        JSONObject item = items.getJSONObject(k).getJSONObject("gridVideoRenderer");
                         if(item.has("videoId")){
                             typeOfId = Const.VIDEO_ID;
                             videoId = item.getString("videoId");
-                            linkToPreview = item.getJSONArray("thumbnails").getJSONObject(0)
+                            linkToPreview = item.getJSONObject("thumbnail").getJSONArray("thumbnails").getJSONObject(0)
                                     .getString("url");
                             title = item.getJSONObject("title").getString("simpleText");
                             publishedTimeText = item.getJSONObject("publishedTimeText").getString("simpleText");
                             viewCountText = item.getJSONObject("viewCountText").getString("simpleText");
                             urlToVideo = Const.BASE_URL + item.getJSONObject("navigationEndpoint").getJSONObject("webNavigationEndpointData")
                                     .getString("url");
-                            author = item.getJSONArray("runs").getJSONObject(0).getString("text");
-                            linkToAuthorChannel = Const.BASE_URL+item.getJSONArray("runs").getJSONObject(0)
-                                    .getJSONObject("navigationEndpoint").getJSONObject("webNavigationEndpointData")
-                                    .getString("url");
+                            author = item.getJSONObject("shortBylineText").getJSONArray("runs").getJSONObject(0).getString("text");
+                            linkToAuthorChannel = Const.BASE_URL+item.getJSONObject("shortBylineText").getJSONArray("runs")
+                                    .getJSONObject(0).getJSONObject("navigationEndpoint")
+                                    .getJSONObject("webNavigationEndpointData").getString("url");
                             duration = item.getJSONArray("thumbnailOverlays").getJSONObject(0)
                                     .getJSONObject("thumbnailOverlayTimeStatusRenderer").getJSONObject("text")
                                     .getString("simpleText");
@@ -395,17 +503,6 @@ public class MainActivity extends AppCompatActivity
                 e.printStackTrace();
             }
 
-        }
-
-        private void parsePlaylistPage(JSONObject localRoot){
-            String videoId, linkToPreview, title, publishedTimeText, viewCountText, urlToVideo
-                    ,author, linkToAuthorChannel, duration;
-            int typeOfId;
-//            try{
-//
-//            }catch (JSONException e){
-//                e.printStackTrace();
-//            }
         }
 
         private void parseItemPage(JSONArray localRoot){
@@ -442,13 +539,49 @@ public class MainActivity extends AppCompatActivity
                                 author, viewCountText, duration, publishedTimeText, linkToAuthorChannel,
                                 channelThumbnail));
                     }else if(item.has("compactVideoRenderer")){
+                        typeOfId = Const.VIDEO_ID;
+                        videoId = item.getJSONObject("compactVideoRenderer").getString("videoId");
+                        linkToPreview = item.getJSONObject("compactVideoRenderer").getJSONObject("thumbnail")
+                                .getJSONArray("thumbnails").getJSONObject(0).getString("url");
+                        title = item.getJSONObject("compactVideoRenderer").getJSONObject("title").getString("simpleText");
+                        publishedTimeText= "";
+                        if(item.getJSONObject("compactVideoRenderer").getJSONObject("viewCountText")
+                                .has("simpleText")) {
+                            viewCountText = item.getJSONObject("compactVideoRenderer").getJSONObject("viewCountText")
+                                    .getString("simpleText");
+                        } else {
+                            Log.d(_start, "--viewCountText--");
+                            Log.d(_start, item.getJSONObject("compactVideoRenderer").getJSONObject("viewCountText")
+                                    .names().toString());
+                            viewCountText ="n/a";
+                        }
+                        urlToVideo = Const.BASE_URL+item.getJSONObject("compactVideoRenderer").getJSONObject("navigationEndpoint")
+                                .getJSONObject("webNavigationEndpointData").getString("url");
+                        author = item.getJSONObject("compactVideoRenderer").getJSONObject("shortBylineText")
+                                .getJSONArray("runs").getJSONObject(0).getString("text");
+                        linkToAuthorChannel = Const.BASE_URL + item.getJSONObject("compactVideoRenderer")
+                                .getJSONObject("shortBylineText").getJSONArray("runs").getJSONObject(0)
+                                .getJSONObject("navigationEndpoint").getJSONObject("webNavigationEndpointData")
+                                .getString("url");
+                        if(item.getJSONObject("compactVideoRenderer").getJSONArray("thumbnailOverlays")
+                                .getJSONObject(0).has("thumbnailOverlayTimeStatusRenderer")) {
+                            duration = item.getJSONObject("compactVideoRenderer").getJSONArray("thumbnailOverlays")
+                                    .getJSONObject(0).getJSONObject("thumbnailOverlayTimeStatusRenderer")
+                                    .getJSONObject("text").getString("simpleText");
+                        } else
+                            duration = "";
+                        channelThumbnail = Const.BASE_URL + item.getJSONObject("compactVideoRenderer").getJSONObject("channelThumbnail")
+                                .getJSONArray("thumbnails").getJSONObject(0).getString("url");
+
+                        publishProgress(new YoutubeItemEx(typeOfId, videoId, linkToPreview, title, urlToVideo,
+                                author, viewCountText, duration, publishedTimeText, linkToAuthorChannel,
+                                channelThumbnail));
 
                     }else if(item.has("compactRadioRenderer")){
 
                     }else{
                         Log.d(_start, item.names().toString());
-                        continue;
-                    }
+                    } // else
                 }
             }catch(JSONException e){
                 e.printStackTrace();
@@ -456,7 +589,95 @@ public class MainActivity extends AppCompatActivity
         }
 
         private void parseSearchPage(JSONArray localRoot){
+            String videoId, linkToPreview, title, publishedTimeText, viewCountText, urlToVideo
+                    ,author, linkToAuthorChannel, duration, channelThumbnail;
+            int typeOfId;
+            try {
+                for (int i = 0; i < localRoot.length(); i++) {
+                    JSONObject item = localRoot.getJSONObject(i);
+                    if (item.has("videoRenderer")) {
+                        typeOfId = Const.VIDEO_ID;
+                        videoId = item.getJSONObject("videoRenderer").getString("videoId");
+                        linkToPreview = item.getJSONObject("videoRenderer").getJSONObject("thumbnail")
+                                .getJSONArray("thumbnails").getJSONObject(0).getString("url");
+                        title = item.getJSONObject("videoRenderer").getJSONObject("title").getString("simpleText");
+                        publishedTimeText = item.getJSONObject("videoRenderer").getJSONObject("publishedTimeText")
+                                .getString("simpleText");
+                        viewCountText = item.getJSONObject("videoRenderer").getJSONObject("viewCountText")
+                                .getString("simpleText");
+                        urlToVideo = Const.BASE_URL+item.getJSONObject("videoRenderer").getJSONObject("navigationEndpoint").
+                                getJSONObject("webNavigationEndpointData").getString("url");
+                        author = item.getJSONObject("videoRenderer").getJSONObject("shortBylineText").getJSONArray("runs")
+                                .getJSONObject(0).getString("text");
+                        linkToAuthorChannel= item.getJSONObject("videoRenderer").getJSONObject("shortBylineText")
+                                .getJSONArray("runs").getJSONObject(0).getJSONObject("navigationEndpoint")
+                                .getJSONObject("webNavigationEndpointData").getString("url");
+                        duration = item.getJSONObject("videoRenderer").getJSONObject("lengthText").getString("simpleText");
+                        channelThumbnail = item.getJSONObject("videoRenderer").getJSONObject("channelThumbnail")
+                                .getJSONArray("thumbnails").getJSONObject(0).getString("url");
 
+                        publishProgress(new YoutubeItemEx(typeOfId,videoId, linkToPreview, title, urlToVideo,
+                                author, viewCountText, duration, publishedTimeText, linkToAuthorChannel,channelThumbnail));
+                    } else if(item.has("channelRenderer")){
+                        typeOfId = Const.CHANNEL_ID;
+                        videoId = item.getJSONObject("channelRenderer").getString("channelId");
+                        linkToPreview = item.getJSONObject("channelRenderer").getJSONObject("thumbnail")
+                                .getJSONArray("thumbnails").getJSONObject(0).getString("url");
+                        title = item.getJSONObject("channelRenderer").getJSONObject("title").getString("simpleText");
+                        publishedTimeText = "";
+                        viewCountText = item.getJSONObject("channelRenderer").getJSONObject("videoCountText")
+                                .getJSONArray("runs").getJSONObject(0).getString("text");
+                        urlToVideo = Const.BASE_URL+item.getJSONObject("channelRenderer").getJSONObject("navigationEndpoint")
+                                .getJSONObject("webNavigationEndpointData").getString("url");
+                        author = item.getJSONObject("channelRenderer").getJSONObject("shortBylineText")
+                                .getJSONArray("runs").getJSONObject(0).getString("text");
+                        linkToAuthorChannel = Const.BASE_URL+item.getJSONObject("channelRenderer").getJSONObject("shortBylineText")
+                                .getJSONArray("runs").getJSONObject(0).getJSONObject("navigationEndpoint")
+                                .getJSONObject("webNavigationEndpointData").getString("url");
+                        duration = "";
+                        channelThumbnail = "";
+
+                        publishProgress(new YoutubeItemEx(typeOfId, videoId, linkToPreview, title, urlToVideo, author,
+                                viewCountText, duration, publishedTimeText, linkToAuthorChannel, channelThumbnail));
+                    } else if(item.has("playlistRenderer")){
+                        typeOfId = Const.PLAYLIST_ID;
+                        videoId = item.getJSONObject("playlistRenderer").getString("playlistId");
+                        linkToPreview = item.getJSONObject("playlistRenderer").getJSONArray("thumbnails").getJSONObject(0)
+                                .getJSONArray("thumbnails").getJSONObject(0).getString("url");
+                        title = item.getJSONObject("playlistRenderer").getJSONObject("title").getString("simpleText");
+                        publishedTimeText = "";
+                        viewCountText = item.getJSONObject("playlistRenderer").getJSONObject("videoCountText").getJSONArray("runs")
+                                .getJSONObject(0).getString("text");
+                        urlToVideo = Const.BASE_URL+item.getJSONObject("playlistRenderer").getJSONObject("navigationEndpoint")
+                                .getJSONObject("webNavigationEndpointData").getString("url");
+                        author = item.getJSONObject("playlistRenderer").getJSONObject("shortByLineText").getJSONArray("runs")
+                                .getJSONObject(0).getString("text");
+                        linkToAuthorChannel= item.getJSONObject("playlistRenderer").getJSONObject("shortBylineText").getJSONArray("runs")
+                                .getJSONObject(0).getJSONObject("navigationEndpoint").getJSONObject("webNavigationEndpointData")
+                                .getString("url");
+                        duration = "";
+                        channelThumbnail = "";
+
+                        publishProgress(new YoutubeItemEx(typeOfId, videoId, linkToPreview, title, urlToVideo, author, viewCountText,
+                                duration, publishedTimeText, linkToAuthorChannel, channelThumbnail));
+                    }else {
+                        Log.d(_start, item.names().toString());
+                    }
+                }
+            }catch(JSONException e){
+                e.printStackTrace();
+            }
+        }
+
+        private void parsePlaylistPage(JSONObject localRoot){
+            String videoId, linkToPreview, title, publishedTimeText, viewCountText, urlToVideo
+                    ,author, linkToAuthorChannel, duration;
+            int typeOfId;
+//            try{
+//
+//            }catch (JSONException e){
+//                e.printStackTrace();
+//            }
         }
 
         private void parseChannelPage(JSONArray localRoot){
@@ -467,6 +688,9 @@ public class MainActivity extends AppCompatActivity
         protected void onProgressUpdate(YoutubeItemEx... values) {
             super.onProgressUpdate(values);
 
+            videoList.add(values[0]);
+            int index = videoList.size();
+            videoAdapter.notifyItemInserted(index);
         }
     }
 
@@ -589,7 +813,7 @@ public class MainActivity extends AppCompatActivity
 
         public SelectVideoIdTask(List<YoutubeItem> _list) {
             list = _list;
-            adapter = contentFragment.getAdapter();
+//            adapter = contentFragment.getAdapter();
         }
 
         @Override
