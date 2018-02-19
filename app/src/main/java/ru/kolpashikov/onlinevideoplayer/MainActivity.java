@@ -1,5 +1,6 @@
 package ru.kolpashikov.onlinevideoplayer;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -8,6 +9,7 @@ import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
@@ -23,6 +25,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -37,8 +40,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -72,6 +77,7 @@ public class MainActivity extends AppCompatActivity
     private NavigationView navigationView;
     private Menu menu;
     private EditText etSearch;
+    private ConstraintLayout searchPanel;
 
     private List<ChannelItem> menuItemList;
     private List<YoutubeItemEx> videoList;
@@ -100,6 +106,7 @@ public class MainActivity extends AppCompatActivity
         setSupportActionBar(toolbar);
 
         etSearch = (EditText)findViewById(R.id.etSearch);
+        searchPanel = (ConstraintLayout)findViewById(R.id.search_panel);
 
         drawer = (DrawerLayout)findViewById(R.id.drawer_layout);
         toggle = new ActionBarDrawerToggle(this, drawer, toolbar,
@@ -172,28 +179,44 @@ public class MainActivity extends AppCompatActivity
             case R.id.action_settings:
                 break;
             case R.id.action_search:
+                searchPanel.setVisibility(View.VISIBLE);
+                /*
                 etSearch.setHint("Search content");
                 etSearch.setVisibility(View.VISIBLE);
-                etSearch.setOnEditorActionListener(new EditText.OnEditorActionListener(){
-                    @Override
-                    public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                        int keyEvent = event.getAction();
-                        Toast.makeText(MainActivity.this, ""+keyEvent+event.toString(),
-                                Toast.LENGTH_SHORT).show();
-                        return false;
-                    }
-                });
+                etSearch.requestFocus();
+                InputMethodManager mm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+                mm.showSoftInput(etSearch, 1);
+
                 etSearch.setOnKeyListener(new View.OnKeyListener(){
                     @Override
                     public boolean onKey(View v, int keyCode, KeyEvent event) {
                         int keyEvent = event.getAction();
-                        if((keyEvent == KeyEvent.ACTION_DOWN)&&(keyCode == KeyEvent.KEYCODE_ENTER)){
-                            Toast.makeText(MainActivity.this, etSearch.getText(), Toast.LENGTH_SHORT).show();
-                            return true;
+                        if(keyEvent == KeyEvent.ACTION_DOWN){
+                            switch(keyCode){
+                                case KeyEvent.KEYCODE_DPAD_CENTER:
+                                case KeyEvent.KEYCODE_ENTER:
+                                    Toast.makeText(MainActivity.this, etSearch.getText(),
+                                            Toast.LENGTH_SHORT).show();
+
+                                    try {
+                                        String searchUrl = Const.BASE_URL + "/results?search_query="
+                                                + URLEncoder.encode(etSearch.getText().toString(), "UTF-8");
+                                        new ParseContentTask(videoList).execute(searchUrl);
+                                    }catch (UnsupportedEncodingException e){
+                                        Toast.makeText(MainActivity.this, "UnsupportedEncodingException\n"
+                                                +e.getMessage(), Toast.LENGTH_SHORT).show();
+                                    }
+                                    InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+                                    imm.hideSoftInputFromWindow(etSearch.getWindowToken(), 0);
+                                    return true;
+                                default:
+                                    break;
+                            }
                         }
                         return false;
                     }
                 });
+                */
 
                 break;
             default:

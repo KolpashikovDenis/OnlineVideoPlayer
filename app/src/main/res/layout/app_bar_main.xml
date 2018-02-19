@@ -20,7 +20,7 @@
             app:popupTheme="@style/AppTheme.PopupOverlay" >
             <include
                 android:visibility="invisible"
-                layout="@layout/edit_text_layout" />
+                layout="@layout/layout_search" />
         </android.support.v7.widget.Toolbar>
 
     </android.support.design.widget.AppBarLayout>
